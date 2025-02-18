@@ -9,15 +9,18 @@ public class DataTransformer {
 
     // Méthode principale pour transformer les données
     public Dataset<Row> transformData(Dataset<Row> data) {
-        data = data.withColumn("is_healthy",
-                        when(col("sugars_100g").leq(5)
-                                .and(col("fat_100g").leq(3))
-                                .and(col("salt_100g").leq(0.3)), lit(true))
-                                .otherwise(lit(false)))
-                .withColumn("ingredient_count", size(split(col("ingredients_text"), ",")));
+        data = data.withColumn("nutri_score",
+                when(col("sugars_100g").leq(5).and(col("fat_100g").leq(3)).and(col("salt_100g").leq(0.3)), lit("A"))
+                        .when(col("sugars_100g").between(5, 10).or(col("fat_100g").between(3, 10)), lit("B"))
+                        .otherwise(lit("C")));
 
-        return filterByCountry(data, "france"); // Appliquer le filtre sur la France
+        data = data.withColumn("is_healthy", col("nutri_score").equalTo("A"));
+
+        data = data.withColumn("ingredient_count", size(split(col("ingredients_text"), ",")));
+
+        return filterByCountry(data, "france");
     }
+
 
     // Nouvelle méthode pour filtrer par pays (réutilisable)
     public Dataset<Row> filterByCountry(Dataset<Row> data, String country) {
